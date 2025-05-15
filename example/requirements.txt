@@ -1,0 +1,3 @@
+Flask==3.0.3
+git+https://github.com/Dog-Egg/Zangar
+git+https://github.com/Dog-Egg/oasis.git#subdirectory=packages/flask-oasis
