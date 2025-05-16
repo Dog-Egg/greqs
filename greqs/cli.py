@@ -1,4 +1,9 @@
 import argparse
+import os
+import sys
+
+current_dir = os.getcwd()
+sys.path.insert(0, current_dir)
 
 parser = argparse.ArgumentParser(__package__)
 parser.add_argument("module", type=str, nargs=1)
