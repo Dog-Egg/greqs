@@ -14,13 +14,12 @@ def test_mod1():
         "lxml",
         "psycopg[binary]",
         "requests",
+        "six",
     ]
 
 
 def test_pkg1():
-    assert main("pkg1") == [
-        "requests",
-    ]
+    assert main("pkg1") == ["requests", "six"]
 
 
 def test_mod_err():

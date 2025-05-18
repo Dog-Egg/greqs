@@ -16,36 +16,45 @@ import typing
 import importlib_metadata as metadata
 
 
+def _expand_dotted_path(path: str) -> list[str]:
+    parts = path.split(".")
+    return [".".join(parts[: i + 1]) for i in range(len(parts))]
+
+
 def extract_dependent_modules(
-    filepath: str,
+    modulespec: ModuleSpec,
 ) -> typing.Generator[ModuleSpec, None, None]:
-    def inner(filepath: str) -> typing.Generator[str, None, None]:
+    def inner(modulespec: ModuleSpec) -> typing.Generator[str, None, None]:
         """提取依赖的模块"""
-        with open(filepath, "r", encoding="utf-8") as f:
+        assert modulespec.origin is not None
+        with open(modulespec.origin, "r", encoding="utf-8") as f:
             tree = ast.parse(f.read())
 
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
-                if node.level == 0:  # 绝对导入
-                    assert node.module is not None, node.module
-                    yield node.module
-                    if node.names[0].name != "*":
-                        for n in node.names:
-                            yield f"{node.module}.{n.name}"
+                parent_name = f"{'.' * node.level}"
+                if node.module:
+                    parent_name += f"{node.module}"
+                for n in node.names:
+                    if n.name == "*":
+                        continue
+                    yield f"{parent_name}.{n.name}"
             if isinstance(node, ast.Import):
                 for n in node.names:
                     yield n.name
 
-    for m in inner(filepath):
-        try:
-            spec = importlib.util.find_spec(m)
-        except ModuleNotFoundError:
-            parent_name = m.partition(".")[0]
-            if not importlib.util.find_spec(parent_name):
-                raise
-        else:
-            if spec is not None:
-                yield spec
+    for dotted_name in inner(modulespec):
+        fullname = importlib.util.resolve_name(dotted_name, modulespec.name)
+        for name in _expand_dotted_path(fullname):
+            try:
+                spec = importlib.util.find_spec(name)
+            except ModuleNotFoundError:
+                parent_name = name.partition(".")[0]
+                if not importlib.util.find_spec(parent_name):
+                    raise
+            else:
+                if spec is not None:
+                    yield spec
 
 
 def is_stdlib_module(modulespec: ModuleSpec):
@@ -132,9 +141,8 @@ def walk_module(
     yield (ModuleTypeEnum.LOCAL, spec)
 
     # 递归遍历本地模块
-    assert spec.origin is not None
-    for m in extract_dependent_modules(spec.origin):
-        yield from walk_module(m)
+    for s in extract_dependent_modules(spec):
+        yield from walk_module(s)
 
 
 def get_submodules_specs(package_spec: ModuleSpec):
