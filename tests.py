@@ -31,7 +31,5 @@ def test_mod_err():
 def test_cli():
     # 测试命令行
     from greqs import cli
-    import sys
 
-    sys.argv = ["greqs", "mod1"]
-    cli.main()
+    cli.main(["--verbose", "mod1"])
