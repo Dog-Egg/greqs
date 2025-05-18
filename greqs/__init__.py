@@ -5,7 +5,7 @@ import enum
 import functools
 from importlib.machinery import ModuleSpec
 import importlib.util
-from io import StringIO
+import logging
 import os
 import pkgutil
 import site
@@ -16,15 +16,39 @@ import typing
 import importlib_metadata as metadata
 
 
+logger = logging.getLogger("greqs")
+
+
 def _expand_dotted_path(path: str) -> list[str]:
     parts = path.split(".")
     return [".".join(parts[: i + 1]) for i in range(len(parts))]
 
 
-def extract_dependent_modules(
-    modulespec: ModuleSpec,
-) -> typing.Generator[ModuleSpec, None, None]:
-    def inner(modulespec: ModuleSpec) -> typing.Generator[str, None, None]:
+class ModuleDependencyExtractor:
+    def __init__(self):
+        self.__extracted_modules: set[str] = set()
+
+    def extract(self, modulespec: ModuleSpec):
+        if modulespec.name in self.__extracted_modules:
+            return
+        self.__extracted_modules.add(modulespec.name)
+
+        logger.debug("Parsing module: %s", modulespec.name)
+
+        for dotted_name in self.__extract(modulespec):
+            fullname = importlib.util.resolve_name(dotted_name, modulespec.name)
+            for name in _expand_dotted_path(fullname):
+                try:
+                    spec = importlib.util.find_spec(name)
+                except ModuleNotFoundError:
+                    parent_name = name.partition(".")[0]
+                    if not importlib.util.find_spec(parent_name):
+                        raise
+                else:
+                    if spec is not None:
+                        yield spec
+
+    def __extract(self, modulespec: ModuleSpec):
         """提取依赖的模块"""
         assert modulespec.origin is not None
         with open(modulespec.origin, "r", encoding="utf-8") as f:
@@ -42,19 +66,6 @@ def extract_dependent_modules(
             if isinstance(node, ast.Import):
                 for n in node.names:
                     yield n.name
-
-    for dotted_name in inner(modulespec):
-        fullname = importlib.util.resolve_name(dotted_name, modulespec.name)
-        for name in _expand_dotted_path(fullname):
-            try:
-                spec = importlib.util.find_spec(name)
-            except ModuleNotFoundError:
-                parent_name = name.partition(".")[0]
-                if not importlib.util.find_spec(parent_name):
-                    raise
-            else:
-                if spec is not None:
-                    yield spec
 
 
 def is_stdlib_module(modulespec: ModuleSpec):
@@ -126,7 +137,11 @@ class ModuleTypeEnum(enum.IntEnum):
 
 def walk_module(
     spec: ModuleSpec,
+    dependency_extractor: ModuleDependencyExtractor | None = None,
 ) -> typing.Generator[tuple[ModuleTypeEnum, ModuleSpec], None, None]:
+    if dependency_extractor is None:
+        dependency_extractor = ModuleDependencyExtractor()
+
     if not spec.has_location:
         return
 
@@ -141,8 +156,8 @@ def walk_module(
     yield (ModuleTypeEnum.LOCAL, spec)
 
     # 递归遍历本地模块
-    for s in extract_dependent_modules(spec):
-        yield from walk_module(s)
+    for s in dependency_extractor.extract(spec):
+        yield from walk_module(s, dependency_extractor)
 
 
 def get_submodules_specs(package_spec: ModuleSpec):
