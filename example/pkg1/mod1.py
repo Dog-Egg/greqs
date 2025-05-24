@@ -1,2 +1,2 @@
-from . import _mod1
+from ._mod1 import *
 from . import *

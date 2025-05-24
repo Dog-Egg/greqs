@@ -22,6 +22,10 @@ def test_pkg1():
     assert main("pkg1") == ["requests", "six"]
 
 
+def test_pkg2():
+    assert main("pkg2") == ["admin-deps"]
+
+
 def test_mod_err():
     with pytest.raises(ModuleNotFoundError) as e:
         main("mod_err")

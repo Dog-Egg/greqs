@@ -35,9 +35,8 @@ class ModuleDependencyExtractor:
 
         logger.debug("Parsing module: %s", modulespec.name)
 
-        for dotted_name in self.__extract(modulespec):
-            fullname = importlib.util.resolve_name(dotted_name, modulespec.name)
-            for name in _expand_dotted_path(fullname):
+        for modulename in self.__extract(modulespec):
+            for name in _expand_dotted_path(modulename):
                 try:
                     spec = importlib.util.find_spec(name)
                 except ModuleNotFoundError:
@@ -48,7 +47,7 @@ class ModuleDependencyExtractor:
                     if spec is not None:
                         yield spec
 
-    def __extract(self, modulespec: ModuleSpec):
+    def __extract(self, modulespec: ModuleSpec) -> typing.Generator[str]:
         """提取依赖的模块"""
         assert modulespec.origin is not None
         with open(modulespec.origin, "r", encoding="utf-8") as f:
@@ -56,14 +55,22 @@ class ModuleDependencyExtractor:
 
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
-                parent_name = f"{'.' * node.level}"
-                if node.module:
-                    parent_name += f"{node.module}"
+                if node.level == 0:
+                    assert node.module is not None
+                    parent_name = node.module
+                else:
+                    name = "." * node.level
+                    if node.module:
+                        name = name + "." + node.module
+                    parent_name = importlib.util.resolve_name(name, modulespec.name)
+
                 for n in node.names:
                     if n.name == "*":
-                        continue
-                    yield f"{parent_name}.{n.name}"
-            if isinstance(node, ast.Import):
+                        yield parent_name
+                    else:
+                        yield f"{parent_name}.{n.name}"
+
+            elif isinstance(node, ast.Import):
                 for n in node.names:
                     yield n.name
 
