@@ -2,6 +2,8 @@ import sys
 
 import pytest
 from greqs import main
+from greqs.helper import iter_import_modules
+from inspect import cleandoc
 
 sys.path.insert(0, "example")
 
@@ -37,3 +39,30 @@ def test_cli():
     from greqs import cli
 
     cli.main(["--verbose", "mod1"])
+
+
+def test_iter_import_modules():
+    assert (
+        list(
+            iter_import_modules(
+                cleandoc(
+                    """
+        import os
+        from . import utils
+        from .tools import translations
+        from otherpkg import *
+    """
+                ),
+                "package.module",
+            )
+        )
+        == [
+            "os",
+            "package",
+            "package.module",
+            "package.module.utils",
+            "package.tools",
+            "package.tools.translations",
+            "otherpkg",
+        ]
+    )

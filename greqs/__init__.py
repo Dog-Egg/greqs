@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ast
 import enum
 import functools
 from importlib.machinery import ModuleSpec
@@ -15,13 +14,10 @@ import typing
 
 import importlib_metadata as metadata
 
+from greqs.helper import iter_import_modules
+
 
 logger = logging.getLogger("greqs")
-
-
-def _expand_dotted_path(path: str) -> list[str]:
-    parts = path.split(".")
-    return [".".join(parts[: i + 1]) for i in range(len(parts))]
 
 
 class ModuleDependencyExtractor:
@@ -35,44 +31,22 @@ class ModuleDependencyExtractor:
 
         logger.debug("Parsing module: %s", modulespec.name)
 
-        for modulename in self.__extract(modulespec):
-            for name in _expand_dotted_path(modulename):
-                try:
-                    spec = importlib.util.find_spec(name)
-                except ModuleNotFoundError:
-                    parent_name = name.partition(".")[0]
-                    if not importlib.util.find_spec(parent_name):
-                        raise
-                else:
-                    if spec is not None:
-                        yield spec
+        for name in self.__extract(modulespec):
+            try:
+                spec = importlib.util.find_spec(name)
+            except ModuleNotFoundError:
+                parent_name = name.partition(".")[0]
+                if not importlib.util.find_spec(parent_name):
+                    raise
+            else:
+                if spec is not None:
+                    yield spec
 
     def __extract(self, modulespec: ModuleSpec) -> typing.Generator[str]:
         """提取依赖的模块"""
         assert modulespec.origin is not None
         with open(modulespec.origin, "r", encoding="utf-8") as f:
-            tree = ast.parse(f.read())
-
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                if node.level == 0:
-                    assert node.module is not None
-                    parent_name = node.module
-                else:
-                    name = "." * node.level
-                    if node.module:
-                        name = name + "." + node.module
-                    parent_name = importlib.util.resolve_name(name, modulespec.name)
-
-                for n in node.names:
-                    if n.name == "*":
-                        yield parent_name
-                    else:
-                        yield f"{parent_name}.{n.name}"
-
-            elif isinstance(node, ast.Import):
-                for n in node.names:
-                    yield n.name
+            yield from iter_import_modules(f.read(), modulespec.name)
 
 
 def is_stdlib_module(modulespec: ModuleSpec):
