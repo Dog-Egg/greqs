@@ -1,5 +1,7 @@
 # greqs
 
+Use the module as the entry point and track import statements to generate requirements.
+
 ## Installation
 
 ```sh
@@ -8,8 +10,18 @@ pip install git+https://github.com/Dog-Egg/greqs.git
 
 ## Usage
 
-```sh
-greqs -h
+```
+usage: greqs [-h] [--verbose] [--output FILE] module
+
+Get requirements from a module (or a package)
+
+positional arguments:
+  module
+
+options:
+  -h, --help     show this help message and exit
+  --verbose      enable verbose mode
+  --output FILE  output the requirements to a file
 ```
 
 

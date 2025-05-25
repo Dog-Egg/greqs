@@ -6,17 +6,20 @@ import sys
 from logging.config import dictConfig
 
 import greqs
+from greqs.helper import file_template
 
 current_dir = os.getcwd()
 sys.path.insert(0, current_dir)
 
-parser = argparse.ArgumentParser(__package__)
+parser = argparse.ArgumentParser(
+    __package__, description="Get requirements from a module (or a package)"
+)
 parser.add_argument("module", type=str, nargs=1)
-parser.add_argument("--verbose", action="store_true")
+parser.add_argument("--verbose", action="store_true", help="enable verbose mode")
 parser.add_argument(
     "--output",
     type=str,
-    help="output the requirements to the file",
+    help="output the requirements to a file",
     metavar="FILE",
 )
 
@@ -47,6 +50,6 @@ def main(argv: list[str] | None = None):
     content = os.linesep.join(greqs.main(args.module[0]))
     if args.output is not None:
         with open(args.output, "w", encoding="utf-8") as f:
-            f.write(content)
+            f.write(file_template(content))
     else:
         print(content)
