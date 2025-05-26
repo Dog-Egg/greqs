@@ -14,7 +14,7 @@ import typing
 
 import importlib_metadata as metadata
 
-from greqs.helper import iter_import_modules
+from .helper import find_module_spec, iter_import_modules
 
 
 logger = logging.getLogger("greqs")
@@ -24,29 +24,21 @@ class ModuleDependencyExtractor:
     def __init__(self):
         self.__extracted_modules: set[str] = set()
 
-    def extract(self, modulespec: ModuleSpec):
+    def extract(
+        self, modulespec: ModuleSpec
+    ) -> typing.Generator[ModuleSpec, None, None]:
         if modulespec.name in self.__extracted_modules:
             return
         self.__extracted_modules.add(modulespec.name)
 
         logger.debug("Parsing module: %s", modulespec.name)
 
-        for name in self.__extract(modulespec):
-            try:
-                spec = importlib.util.find_spec(name)
-            except ModuleNotFoundError:
-                parent_name = name.partition(".")[0]
-                if not importlib.util.find_spec(parent_name):
-                    raise
-            else:
-                if spec is not None:
-                    yield spec
-
-    def __extract(self, modulespec: ModuleSpec) -> typing.Generator[str]:
-        """提取依赖的模块"""
         assert modulespec.origin is not None
         with open(modulespec.origin, "r", encoding="utf-8") as f:
-            yield from iter_import_modules(f.read(), modulespec.name)
+            for name, definite_module in iter_import_modules(f.read(), modulespec.name):
+                spec = find_module_spec(name, definite_module)
+                if spec:
+                    yield spec
 
 
 def is_stdlib_module(modulespec: ModuleSpec):
@@ -194,7 +186,7 @@ def get_reqs(spec: ModuleSpec):
 def main(module: str) -> list[str]:
     spec = importlib.util.find_spec(module)
     if spec is None:
-        raise ValueError(f"Module {module!r} not found")
+        raise ModuleNotFoundError(f"Module {module!r} not found")
 
     reqs = set()
     if spec.submodule_search_locations is not None:

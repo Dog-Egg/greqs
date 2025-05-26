@@ -2,17 +2,21 @@ from __future__ import annotations
 
 import ast
 import datetime
+from importlib.machinery import ModuleSpec
 import importlib.util
 import os
 import typing
 
 
-def _iter_import_modules(code: str, module: str) -> typing.Generator[str, None, None]:
+def _iter_import_modules(
+    code: str, module: str
+) -> typing.Generator[tuple[str, bool], None, None]:
     """
     从代码中获取可能的导入模块名 (有可能导入的是对象，但该函数不进行分辨)
 
     @param code: 模块代码
     @param module: 模块名
+    @return: (module_name, definite_module) definite_module 为 True 表示一定是模块，为 False 表示可能是模块。
     """
     tree = ast.parse(code)
     for node in ast.walk(tree):
@@ -26,25 +30,27 @@ def _iter_import_modules(code: str, module: str) -> typing.Generator[str, None, 
                     name = name + "." + node.module
                 parent_name = importlib.util.resolve_name(name, module)
 
+            # 当导入一个 pkg.mod 的模块时，必然会导入 pkg.__init__ (也就是 pkg)，所以需要将模块名逐级展开。
+            for n in _expand_module_name(parent_name):
+                yield n, True
+
             for n in node.names:
-                if n.name == "*":
-                    yield parent_name
-                else:
-                    yield f"{parent_name}.{n.name}"
+                if n.name != "*":
+                    yield f"{parent_name}.{n.name}", False
 
         elif isinstance(node, ast.Import):
             for n in node.names:
-                yield n.name
+                yield n.name, True
 
 
-def iter_import_modules(*args, **kwargs) -> typing.Generator[str, None, None]:
+def iter_import_modules(
+    *args, **kwargs
+) -> typing.Generator[tuple[str, bool], None, None]:
     unique = set()
-    for name in _iter_import_modules(*args, **kwargs):
-        # 当导入一个 pkg.mod 的模块时，必然会导入 pkg.__init__ (也就是 pkg)，所以需要将模块名逐级展开。
-        for n in _expand_module_name(name):
-            if n not in unique:
-                unique.add(n)
-                yield n
+    for item in _iter_import_modules(*args, **kwargs):
+        if item not in unique:
+            unique.add(item)
+            yield item
 
 
 def _expand_module_name(name: str) -> list[str]:
@@ -61,3 +67,16 @@ def file_template(content: str):
             "",
         ]
     )
+
+
+def find_module_spec(name: str, definite_module: bool) -> ModuleSpec | None:
+    try:
+        spec = importlib.util.find_spec(name)
+    except ModuleNotFoundError:
+        if definite_module:
+            raise
+    else:
+        if spec is None:
+            if definite_module:
+                raise ModuleNotFoundError(f"No module named {name!r}")
+        return spec

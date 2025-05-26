@@ -3,7 +3,7 @@ import sys
 from freezegun import freeze_time
 import pytest
 from greqs import main
-from greqs.helper import file_template, iter_import_modules
+from greqs.helper import file_template, find_module_spec, iter_import_modules
 from inspect import cleandoc
 
 sys.path.insert(0, "example")
@@ -29,10 +29,14 @@ def test_pkg2():
     assert main("pkg2") == ["admin-deps"]
 
 
-def test_mod_err():
+def test_find_module_spec():
     with pytest.raises(ModuleNotFoundError) as e:
-        main("mod_err")
-    assert e.value.msg == "No module named 'validators'"
+        find_module_spec("xxx", True)
+    assert e.value.msg == "No module named 'xxx'"
+
+    with pytest.raises(ModuleNotFoundError) as e:
+        find_module_spec("xxx.yyy", True)
+    assert e.value.msg == "No module named 'xxx'"
 
 
 def test_cli():
@@ -58,13 +62,13 @@ def test_iter_import_modules():
             )
         )
         == [
-            "os",
-            "package",
-            "package.module",
-            "package.module.utils",
-            "package.tools",
-            "package.tools.translations",
-            "otherpkg",
+            ("os", True),
+            ("package", True),
+            ("package.module", True),
+            ("package.module.utils", False),
+            ("package.tools", True),
+            ("package.tools.translations", False),
+            ("otherpkg", True),
         ]
     )
 
