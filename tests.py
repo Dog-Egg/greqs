@@ -1,3 +1,4 @@
+from importlib.machinery import ModuleSpec
 import sys
 
 from freezegun import freeze_time
@@ -58,17 +59,41 @@ def test_iter_import_modules():
         from otherpkg import *
     """
                 ),
-                "package.module",
+                ModuleSpec(
+                    "package.foo", None, is_package=True
+                ),  # 代码所在模块为 __init__.py
             )
         )
         == [
             ("os", True),
             ("package", True),
-            ("package.module", True),
-            ("package.module.utils", False),
+            ("package.foo", True),
+            ("package.foo.utils", False),
+            ("package.foo.tools", True),
+            ("package.foo.tools.translations", False),
+            ("otherpkg", True),
+        ]
+    )
+
+    assert (
+        list(
+            iter_import_modules(
+                cleandoc(
+                    """
+        from . import utils
+        from .tools import translations
+    """
+                ),
+                ModuleSpec(
+                    "package.foo", None, is_package=False
+                ),  # 代码所在模块为普通模块
+            )
+        )
+        == [
+            ("package", True),
+            ("package.utils", False),
             ("package.tools", True),
             ("package.tools.translations", False),
-            ("otherpkg", True),
         ]
     )
 

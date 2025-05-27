@@ -16,7 +16,7 @@ import importlib_metadata as metadata
 
 from .helper import find_module_spec, iter_import_modules
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 logger = logging.getLogger("greqs")
 
@@ -36,7 +36,7 @@ class ModuleDependencyExtractor:
 
         assert modulespec.origin is not None
         with open(modulespec.origin, "r", encoding="utf-8") as f:
-            for name, definite_module in iter_import_modules(f.read(), modulespec.name):
+            for name, definite_module in iter_import_modules(f.read(), modulespec):
                 spec = find_module_spec(name, definite_module)
                 if spec:
                     yield spec

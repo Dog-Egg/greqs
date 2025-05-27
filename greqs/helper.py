@@ -9,13 +9,13 @@ import typing
 
 
 def _iter_import_modules(
-    code: str, module: str
+    code: str, module: ModuleSpec
 ) -> typing.Generator[tuple[str, bool], None, None]:
     """
     从代码中获取可能的导入模块名 (有可能导入的是对象，但该函数不进行分辨)
 
     @param code: 模块代码
-    @param module: 模块名
+    @param module: 模块的 ModuleSpec
     @return: (module_name, definite_module) definite_module 为 True 表示一定是模块，为 False 表示可能是模块。
     """
     tree = ast.parse(code)
@@ -27,8 +27,8 @@ def _iter_import_modules(
             else:
                 name = "." * node.level
                 if node.module:
-                    name = name + "." + node.module
-                parent_name = importlib.util.resolve_name(name, module)
+                    name = name + node.module
+                parent_name = importlib.util.resolve_name(name, module.parent)
 
             # 当导入一个 pkg.mod 的模块时，必然会导入 pkg.__init__ (也就是 pkg)，所以需要将模块名逐级展开。
             for n in _expand_module_name(parent_name):
