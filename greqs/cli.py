@@ -12,9 +12,9 @@ current_dir = os.getcwd()
 sys.path.insert(0, current_dir)
 
 parser = argparse.ArgumentParser(
-    __package__, description="Get requirements from a module (or a package)"
+    __package__, description="Get requirements from modules (or packages)"
 )
-parser.add_argument("module", type=str, nargs=1)
+parser.add_argument("module", type=str, nargs="+")
 parser.add_argument("--verbose", action="store_true", help="enable verbose mode")
 parser.add_argument(
     "--output",
@@ -47,7 +47,7 @@ def main(argv: list[str] | None = None):
             }
         )
 
-    content = os.linesep.join(greqs.main(args.module[0]))
+    content = os.linesep.join(greqs.main(args.module))
     if args.output is not None:
         with open(args.output, "w", encoding="utf-8") as f:
             f.write(file_template(content))

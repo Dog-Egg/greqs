@@ -183,21 +183,26 @@ def get_reqs(spec: ModuleSpec):
         yield req
 
 
-def main(module: str) -> list[str]:
+def _iter_specs(module: str):
     spec = importlib.util.find_spec(module)
     if spec is None:
         raise ModuleNotFoundError(f"Module {module!r} not found")
 
-    reqs = set()
     if spec.submodule_search_locations is not None:
-        # a package
-        specs = get_submodules_specs(spec)
+        # this is a package
+        for s in get_submodules_specs(spec):
+            yield s
     else:
-        # a module
-        specs = [spec]
+        # just a module
+        yield spec
 
-    for spec in specs:
-        for req in get_reqs(spec):
-            reqs.add(req)
+
+def main(modules: list[str]) -> list[str]:
+    reqs = set()
+    for module in set(modules):
+        # TODO 可能的重复执行待优化
+        for spec in _iter_specs(module):
+            for req in get_reqs(spec):
+                reqs.add(req)
 
     return sorted(reqs)

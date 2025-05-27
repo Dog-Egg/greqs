@@ -10,7 +10,7 @@ sys.path.insert(0, "example")
 
 
 def test_mod1():
-    assert main("mod1") == [
+    assert main(["mod1"]) == [
         "Flask==3.0.3",
         "git+https://github.com/Dog-Egg/Zangar",
         "git+https://github.com/Dog-Egg/oasis.git#subdirectory=packages/flask-oasis",
@@ -22,11 +22,11 @@ def test_mod1():
 
 
 def test_pkg1():
-    assert main("pkg1") == ["requests", "six"]
+    assert main(["pkg1"]) == ["requests", "six"]
 
 
 def test_pkg2():
-    assert main("pkg2") == ["admin-deps"]
+    assert main(["pkg2"]) == ["admin-deps"]
 
 
 def test_find_module_spec():
