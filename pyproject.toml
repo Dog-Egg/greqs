@@ -1,8 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "greqs"
-version = "0.2.0"
+dynamic = ["version"]
 dependencies = ["importlib_metadata"]
 requires-python = ">= 3.8"
+
+[tool.setuptools.dynamic]
+version = { attr = "greqs.__version__" }
 
 [project.scripts]
 greqs = "greqs.cli:main"

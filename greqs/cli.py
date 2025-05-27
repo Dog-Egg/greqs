@@ -22,6 +22,9 @@ parser.add_argument(
     help="output the requirements to a file",
     metavar="FILE",
 )
+parser.add_argument(
+    "--version", action="version", version="%(prog)s {0}".format(greqs.__version__)
+)
 
 
 def main(argv: list[str] | None = None):
