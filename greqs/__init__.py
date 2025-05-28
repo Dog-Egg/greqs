@@ -16,7 +16,7 @@ import importlib_metadata as metadata
 
 from .helper import find_module_spec, iter_import_modules
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 logger = logging.getLogger("greqs")
 
