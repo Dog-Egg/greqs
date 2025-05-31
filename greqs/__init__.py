@@ -16,7 +16,7 @@ import importlib_metadata as metadata
 
 from .helper import find_module_spec, iter_import_modules
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 logger = logging.getLogger("greqs")
 
@@ -175,10 +175,14 @@ def get_reqs(spec: ModuleSpec):
     for dist in dists:
         origin = dist.origin
         if origin is not None and hasattr(origin, "vcs_info"):
-            req = f"{origin.vcs_info.vcs}+{origin.url}"
-            # req += f"@{origin.vcs_info.commit_id}" # FIXME commit_id 可能会导致依赖冲突，占时不加
-            if hasattr(origin, "subdirectory"):
-                req += f"#subdirectory={origin.subdirectory}"
+            if origin.vcs_info.vcs == "git":
+                req = f"git+{origin.url}"
+                if hasattr(origin.vcs_info, "commit_id"):
+                    req += f"@{origin.vcs_info.commit_id}"
+                if hasattr(origin, "subdirectory"):
+                    req += f"#subdirectory={origin.subdirectory}"
+            else:
+                raise NotImplementedError(f"VCS {origin.vcs_info.vcs} is not supported")
         else:
             req = f"{dist.name}=={dist.version}"
         yield req

@@ -12,8 +12,8 @@ sys.path.insert(0, "example")
 def test_mod1():
     assert main(["mod1"]) == [
         "Flask==3.0.3",
-        "git+https://github.com/Dog-Egg/Zangar",
-        "git+https://github.com/Dog-Egg/oasis.git#subdirectory=packages/flask-oasis",
+        "git+https://github.com/Dog-Egg/Zangar@7020f81e8fee174d1912c29927edb7b9adc1a244",
+        "git+https://github.com/Dog-Egg/oasis.git@ccf097d21d6c4c0bfe6fd9c2a0faa8819dd6267c#subdirectory=packages/flask-oasis",
         "lxml",
         "psycopg[binary]",
         "requests",
