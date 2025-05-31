@@ -1,2 +1,6 @@
 [run]
 source = greqs
+
+[report]
+exclude_also = 
+    raise NotImplementedError

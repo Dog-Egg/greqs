@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import ast
-import datetime
 from importlib.machinery import ModuleSpec
 import importlib.util
 import os
 import typing
+
+import importlib_metadata as metadata
 
 
 def _iter_import_modules(
@@ -80,3 +81,28 @@ def find_module_spec(name: str, definite_module: bool) -> ModuleSpec | None:
             if definite_module:
                 raise ModuleNotFoundError(f"No module named {name!r}")
         return spec
+
+
+def get_req_from_dist(dist: metadata.Distribution, ignore_version: bool):
+    origin = dist.origin
+    if origin is not None and hasattr(origin, "vcs_info"):
+        if origin.vcs_info.vcs == "git":
+            req = f"git+{origin.url}"
+            if hasattr(origin.vcs_info, "commit_id") and not ignore_version:
+                req += f"@{origin.vcs_info.commit_id}"
+            if hasattr(origin, "subdirectory"):
+                req += f"#subdirectory={origin.subdirectory}"
+        else:
+            raise NotImplementedError(f"VCS {origin.vcs_info.vcs} is not supported")
+    else:
+        if ignore_version:
+            req = dist.name
+        else:
+            req = f"{dist.name}=={dist.version}"
+    return req
+
+
+def get_ignore_version(distname, ignore_version: list[str] | bool) -> bool:
+    if isinstance(ignore_version, list):
+        return distname.lower() in [x.lower() for x in ignore_version]
+    return ignore_version

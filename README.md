@@ -33,3 +33,14 @@ For example:
 ```python
 # requirements: psycopg[binary] lxml
 ```
+
+## Configuration
+
+You can configure **greqs** by adding a `[tool.greqs]` section to your `pyproject.toml` file.
+
+```toml
+[tool.greqs]
+ignore_version = ["flask"]
+```
+
+* `ignore_version`: a list of package names (case-insensitive) that should not have their version pinned. You can also set this to `true` to ignore the version of all packages.

@@ -14,9 +14,16 @@ import typing
 
 import importlib_metadata as metadata
 
-from .helper import find_module_spec, iter_import_modules
+from greqs.config import load_config
 
-__version__ = "0.2.3"
+from .helper import (
+    find_module_spec,
+    get_ignore_version,
+    get_req_from_dist,
+    iter_import_modules,
+)
+
+__version__ = "0.2.4"
 
 logger = logging.getLogger("greqs")
 
@@ -162,9 +169,8 @@ def extract_requirements_from_comments(file: str) -> typing.Generator[str]:
                     yield req
 
 
-def get_reqs(spec: ModuleSpec):
+def get_reqs(spec: ModuleSpec, ignore_version: list[str] | bool = False):
     dists: list[metadata.Distribution] = []
-
     for model_type, spec in walk_module(spec):
         if model_type == ModuleTypeEnum.THIRD_PARTY:
             dists.append(find_distribution(spec))
@@ -173,19 +179,7 @@ def get_reqs(spec: ModuleSpec):
             yield from extract_requirements_from_comments(spec.origin)
 
     for dist in dists:
-        origin = dist.origin
-        if origin is not None and hasattr(origin, "vcs_info"):
-            if origin.vcs_info.vcs == "git":
-                req = f"git+{origin.url}"
-                if hasattr(origin.vcs_info, "commit_id"):
-                    req += f"@{origin.vcs_info.commit_id}"
-                if hasattr(origin, "subdirectory"):
-                    req += f"#subdirectory={origin.subdirectory}"
-            else:
-                raise NotImplementedError(f"VCS {origin.vcs_info.vcs} is not supported")
-        else:
-            req = f"{dist.name}=={dist.version}"
-        yield req
+        yield get_req_from_dist(dist, get_ignore_version(dist.name, ignore_version))
 
 
 def _iter_specs(module: str):
@@ -204,10 +198,12 @@ def _iter_specs(module: str):
 
 def main(modules: list[str]) -> list[str]:
     reqs = set()
+    config = load_config()
+
     for module in set(modules):
         # TODO 可能的重复执行待优化
         for spec in _iter_specs(module):
-            for req in get_reqs(spec):
+            for req in get_reqs(spec, config.get("ignore_version", False)):
                 reqs.add(req)
 
     return sorted(reqs)
