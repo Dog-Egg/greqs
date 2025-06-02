@@ -15,4 +15,3 @@ version = { attr = "greqs.__version__" }
 greqs = "greqs.cli:main"
 
 [tool.pytest.ini_options]
-python_files = ["tests.py"]

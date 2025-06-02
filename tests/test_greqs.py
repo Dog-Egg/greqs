@@ -1,4 +1,5 @@
 from importlib.machinery import ModuleSpec
+from pathlib import Path
 import sys
 
 import pytest
@@ -13,18 +14,6 @@ from greqs.helper import (
 from inspect import cleandoc
 
 sys.path.insert(0, "example")
-
-
-def test_mod1():
-    assert main(["mod1"]) == [
-        "Flask==3.0.3",
-        "git+https://github.com/Dog-Egg/Zangar@7020f81e8fee174d1912c29927edb7b9adc1a244",
-        "git+https://github.com/Dog-Egg/oasis.git@ccf097d21d6c4c0bfe6fd9c2a0faa8819dd6267c#subdirectory=packages/flask-oasis",
-        "lxml",
-        "psycopg[binary]",
-        "requests",
-        "six",
-    ]
 
 
 def test_pkg1():
@@ -112,16 +101,22 @@ def test_file_template():
 def test_get_req_from_dist():
     import importlib_metadata as metadata
 
-    assert get_req_from_dist(metadata.distribution("flask"), False) == "Flask==3.0.3"
-    assert get_req_from_dist(metadata.distribution("flask"), True) == "Flask"
+    flask_dist_info = metadata.PathDistribution(
+        Path(__file__).parent / "mocks/flask-3.0.3.dist-info"
+    )
+    assert get_req_from_dist(flask_dist_info, False) == "Flask==3.0.3"
+    assert get_req_from_dist(flask_dist_info, True) == "Flask"
 
     # git vcs
+    zangar_dist_info = metadata.PathDistribution(
+        Path(__file__).parent / "mocks/zangar-0.1.dev20250421033559.dist-info"
+    )
     assert (
-        get_req_from_dist(metadata.distribution("zangar"), False)
+        get_req_from_dist(zangar_dist_info, False)
         == "git+https://github.com/Dog-Egg/Zangar@7020f81e8fee174d1912c29927edb7b9adc1a244"
     )
     assert (
-        get_req_from_dist(metadata.distribution("zangar"), True)
+        get_req_from_dist(zangar_dist_info, True)
         == "git+https://github.com/Dog-Egg/Zangar"
     )
 

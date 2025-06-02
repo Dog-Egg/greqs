@@ -1,0 +1,10 @@
+Metadata-Version: 2.1
+Name: Zangar
+Version: 0.1.dev20250421033559
+Author-email: Lee <294622946@qq.com>
+Project-URL: Homepage, https://github.com/Dog-Egg/Zangar
+Project-URL: Issues, https://github.com/Dog-Egg/Zangar/issues
+Requires-Python: >=3.8
+License-File: LICENSE
+Requires-Dist: python-dateutil
+
