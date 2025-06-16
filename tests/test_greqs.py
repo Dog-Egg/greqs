@@ -1,4 +1,5 @@
 from importlib.machinery import ModuleSpec
+import os
 from pathlib import Path
 import sys
 
@@ -14,6 +15,7 @@ from greqs.helper import (
 from inspect import cleandoc
 
 sys.path.insert(0, "example")
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "sitepackages"))
 
 
 def test_pkg1():
@@ -102,14 +104,14 @@ def test_get_req_from_dist():
     import importlib_metadata as metadata
 
     flask_dist_info = metadata.PathDistribution(
-        Path(__file__).parent / "mocks/flask-3.0.3.dist-info"
+        Path(__file__).parent / "sitepackages/flask-3.0.3.dist-info"
     )
     assert get_req_from_dist(flask_dist_info, False) == "Flask==3.0.3"
     assert get_req_from_dist(flask_dist_info, True) == "Flask"
 
     # git vcs
     zangar_dist_info = metadata.PathDistribution(
-        Path(__file__).parent / "mocks/zangar-0.1.dev20250421033559.dist-info"
+        Path(__file__).parent / "sitepackages/zangar-0.1.dev20250421033559.dist-info"
     )
     assert (
         get_req_from_dist(zangar_dist_info, False)
@@ -123,3 +125,11 @@ def test_get_req_from_dist():
 
 def test_get_ignore_version():
     assert get_ignore_version("flask", ["flask"]) is True
+
+
+def test_no_exceptions():
+    """
+    issue: 遇到 importlib.util.find_spec('package.module.obj') 会动态导入 package.module，
+        如何 package.module 中直接抛出异常，则会导致程序失败。
+    """
+    main(["e1"])

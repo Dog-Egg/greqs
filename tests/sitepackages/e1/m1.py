@@ -1,0 +1,2 @@
+obj = object()
+raise RuntimeError()

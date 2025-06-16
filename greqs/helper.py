@@ -76,6 +76,9 @@ def find_module_spec(name: str, definite_module: bool) -> ModuleSpec | None:
     except ModuleNotFoundError:
         if definite_module:
             raise
+    except Exception:
+        # 当 name 形如 module.object 时，会动态导入 module，如果 module 抛出异常，则会导致程序失败
+        pass
     else:
         if spec is None:
             if definite_module:
