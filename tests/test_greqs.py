@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "sitepackages"))
 
 
 def test_pkg1():
-    assert main(["pkg1"]) == ["requests", "six"]
+    assert main(["pkg1"]) == ["requests", "six==1.17.0"]
 
 
 def test_pkg2():

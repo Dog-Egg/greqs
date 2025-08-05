@@ -13,6 +13,7 @@ import tokenize
 import typing
 
 import importlib_metadata as metadata
+from requirements.requirement import Requirement
 
 from greqs.config import load_config
 
@@ -23,7 +24,7 @@ from .helper import (
     iter_import_modules,
 )
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 
 logger = logging.getLogger("greqs")
 
@@ -155,7 +156,9 @@ def get_submodules_specs(package_spec: ModuleSpec):
     return specs
 
 
-def extract_requirements_from_comments(file: str) -> typing.Generator[str]:
+def extract_requirements_from_comments(
+    file: str, ignore_version: list[str] | bool = False
+) -> typing.Generator[str]:
     comment_prefix = "# requirements:"
 
     with open(file, "r") as f:
@@ -166,7 +169,18 @@ def extract_requirements_from_comments(file: str) -> typing.Generator[str]:
             if tok_string.startswith(comment_prefix):
                 reqs = tok_string[len(comment_prefix) :]
                 for req in reqs.split():
-                    yield req
+                    r = Requirement.parse(req)
+                    if isinstance(r.name, str) and not r.specs:
+                        spec = find_module_spec(r.name)
+                        if spec:
+                            dist = find_distribution(spec)
+                            yield get_req_from_dist(
+                                dist, get_ignore_version(dist.name, ignore_version)
+                            )
+                        else:
+                            yield req
+                    else:
+                        yield req
 
 
 def get_reqs(spec: ModuleSpec, ignore_version: list[str] | bool = False):
@@ -176,7 +190,7 @@ def get_reqs(spec: ModuleSpec, ignore_version: list[str] | bool = False):
             dists.append(find_distribution(spec))
         elif model_type == ModuleTypeEnum.LOCAL:
             assert spec.origin is not None
-            yield from extract_requirements_from_comments(spec.origin)
+            yield from extract_requirements_from_comments(spec.origin, ignore_version)
 
     for dist in dists:
         yield get_req_from_dist(dist, get_ignore_version(dist.name, ignore_version))

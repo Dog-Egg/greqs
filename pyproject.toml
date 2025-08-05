@@ -5,7 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "greqs"
 dynamic = ["version"]
-dependencies = ["importlib_metadata", "tomli>=1; python_version<'3.11'"]
+dependencies = [
+    "importlib_metadata",
+    "tomli>=1; python_version<'3.11'",
+    "requirements-parser",
+]
 requires-python = ">= 3.8"
 
 [tool.setuptools.dynamic]

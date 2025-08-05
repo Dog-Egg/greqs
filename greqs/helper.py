@@ -70,7 +70,23 @@ def file_template(content: str):
     )
 
 
-def find_module_spec(name: str, definite_module: bool) -> ModuleSpec | None:
+@typing.overload
+def find_module_spec(name: str) -> ModuleSpec | None: ...
+
+
+@typing.overload
+def find_module_spec(
+    name: str, definite_module: typing.Literal[True]
+) -> ModuleSpec: ...
+
+
+@typing.overload
+def find_module_spec(
+    name: str, definite_module: typing.Literal[False]
+) -> ModuleSpec | None: ...
+
+
+def find_module_spec(name: str, definite_module: bool = False):
     try:
         spec = importlib.util.find_spec(name)
     except ModuleNotFoundError:
