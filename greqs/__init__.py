@@ -24,7 +24,7 @@ from .helper import (
     iter_import_modules,
 )
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 logger = logging.getLogger("greqs")
 
@@ -174,9 +174,12 @@ def extract_requirements_from_comments(
                         spec = find_module_spec(r.name)
                         if spec:
                             dist = find_distribution(spec)
-                            yield get_req_from_dist(
-                                dist, get_ignore_version(dist.name, ignore_version)
+                            r2 = Requirement.parse(
+                                get_req_from_dist(
+                                    dist, get_ignore_version(dist.name, ignore_version)
+                                )
                             )
+                            yield r.line + "".join(r2.specs[0])
                         else:
                             yield req
                     else:
